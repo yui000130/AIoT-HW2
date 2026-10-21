@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>多元迴歸分析平台</title>
+  <meta name="description" content="模組化多元線性迴歸 + 五種特徵選擇演算法；內建 King County 房價等資料集，也可上傳任意 CSV 在瀏覽器中以 Pyodide 即時分析。">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232a78d6'/%3E%3Cpath d='M6 24 L13 15 L18 19 L26 8' stroke='white' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar">
+  <div class="wrap topbar-inner">
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="7"/><path d="M6 24 L13 15 L18 19 L26 8"/></svg>
+      <div>
+        <h1>多元迴歸分析平台</h1>
+        <p>Multiple Linear Regression · 5 種特徵選擇 · CRISP-DM</p>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <a class="btn ghost" href="https://github.com/yui000130/AIoT-HW2" target="_blank" rel="noopener">GitHub</a>
+      <button class="btn ghost" id="themeBtn" type="button" aria-label="切換深色 / 淺色模式">深色模式</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <section class="picker" aria-label="選擇資料集">
+    <div class="picker-head">
+      <h2>選擇資料集</h2>
+      <p class="muted">內建報表由 <code>python -m mlr_engine --build-all</code> 預先產生；自訂 CSV 會在你的瀏覽器中以 Pyodide 執行同一份 Python 程式，資料不會上傳到任何伺服器。</p>
+    </div>
+    <div class="cards" id="datasetCards"></div>
+  </section>
+
+  <!-- 自訂 CSV -->
+  <section class="panel" id="uploadPanel" hidden>
+    <div class="panel-head">
+      <h2>上傳自訂 CSV</h2>
+      <span class="status" id="engineStatus">Python 引擎尚未載入</span>
+    </div>
+    <div class="upload-grid">
+      <label class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept=".csv,.txt,.tsv,text/csv">
+        <strong>拖曳 CSV 到這裡，或點擊選擇檔案</strong>
+        <span class="muted">支援 UTF-8 / Big5、逗號 / 分號 / Tab 分隔、無標題列</span>
+      </label>
+      <div class="url-box">
+        <label for="urlInput">或輸入公開 CSV 網址</label>
+        <div class="row">
+          <input type="url" id="urlInput" placeholder="https://raw.githubusercontent.com/.../data.csv">
+          <button class="btn" id="urlBtn" type="button">載入</button>
+        </div>
+        <div class="examples" id="urlExamples"></div>
+      </div>
+    </div>
+
+    <div id="inspectBox" hidden>
+      <h3 id="inspectTitle"></h3>
+      <div class="table-wrap"><table class="tbl" id="inspectTable"></table></div>
+      <div class="options">
+        <label>目標欄位 (y)
+          <select id="optTarget"></select></label>
+        <label>目標取 log
+          <select id="optLog"><option value="auto">自動（右偏才取）</option><option value="true">是</option><option value="false">否</option></select></label>
+        <label>選 k 的規則
+          <select id="optRule"><option value="one_se">1-SE 法則</option><option value="tolerance">CV RMSE 容忍值</option></select></label>
+        <label>容忍值
+          <input type="number" id="optTol" value="0.002" step="0.001" min="0"></label>
+        <label>測試集比例
+          <select id="optTest"><option>0.2</option><option>0.25</option><option>0.3</option></select></label>
+        <label>CV 折數
+          <select id="optFolds"><option>5</option><option>10</option></select></label>
+        <label>Exhaustive 上限（特徵數）
+          <input type="number" id="optExh" value="15" min="1" max="20"></label>
+        <label class="check"><input type="checkbox" id="optRef" checked> 加入梯度提升樹參考模型</label>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="runBtn" type="button">開始分析</button>
+        <span class="status" id="runStatus"></span>
+      </div>
+    </div>
+  </section>
+
+  <div id="report" hidden>
+    <nav class="toc" aria-label="報表章節">
+      <a href="#s-summary">總覽</a><a href="#s-data">資料理解</a><a href="#s-selection">特徵選擇</a>
+      <a href="#s-models">模型比較</a><a href="#s-coef">係數</a><a href="#s-eval">評估</a>
+      <a href="#s-outliers">離群值</a><a href="#s-predict">即時預測</a>
+    </nav>
+
+    <section class="panel" id="s-summary">
+      <div class="panel-head">
+        <div>
+          <h2 id="rTitle"></h2>
+          <p class="muted" id="rDesc"></p>
+        </div>
+        <button class="btn ghost" id="downloadBtn" type="button">下載報表 JSON</button>
+      </div>
+      <div class="kpis" id="kpis"></div>
+      <p class="lead" id="mainSentence"></p>
+      <details class="notes"><summary>前處理紀錄</summary><ul id="notes"></ul></details>
+    </section>
+
+    <section class="panel" id="s-data">
+      <h2>1 · 資料理解</h2>
+      <div class="grid2">
+        <figure class="fig"><figcaption id="histCap">目標分布</figcaption>
+          <div class="seg" id="histSeg"></div>
+          <div class="chart"><canvas id="cHist"></canvas></div></figure>
+        <figure class="fig"><figcaption>各特徵與目標（模型尺度）的相關係數</figcaption>
+          <div class="chart tall" id="corrWrap"><canvas id="cCorr"></canvas></div></figure>
+      </div>
+      <figure class="fig" id="heatFig"><figcaption>特徵相關矩陣</figcaption>
+        <div class="table-wrap"><table class="heat" id="heat"></table></div></figure>
+      <details><summary>欄位型態判斷</summary><div class="table-wrap"><table class="tbl" id="colTable"></table></div></details>
+      <details><summary>原始資料前 50 列</summary><div class="table-wrap scroll"><table class="tbl small" id="previewTable"></table></div></details>
+    </section>
+
+    <section class="panel" id="s-selection">
+      <h2>2 · 特徵選擇：k 個特徵時的表現</h2>
+      <p class="muted" id="ruleText"></p>
+      <div class="seg" id="kSeg"></div>
+      <div class="chart tall"><canvas id="cK"></canvas></div>
+      <details><summary>表格檢視</summary><div class="table-wrap"><table class="tbl" id="kTable"></table></div></details>
+      <h3>各方法的特徵排序（數字 = 第幾個被選入；底色 = 落在該方法選出的 k 之內；✓ = 主模型特徵）</h3>
+      <div class="table-wrap"><table class="tbl rank" id="rankTable"></table></div>
+    </section>
+
+    <section class="panel" id="s-models">
+      <h2>3 · 模型比較</h2>
+      <div class="table-wrap"><table class="tbl" id="modelTable"></table></div>
+      <p class="muted small" id="modelNote"></p>
+    </section>
+
+    <section class="panel" id="s-coef">
+      <h2>4 · 主模型 OLS 係數</h2>
+      <p class="muted" id="coefText"></p>
+      <div class="table-wrap"><table class="tbl" id="coefTable"></table></div>
+      <div class="grid2">
+        <figure class="fig"><figcaption>標準化係數與 95% 信賴區間（每增加 1 個標準差的影響）</figcaption>
+          <div class="chart tall" id="stdWrap"><canvas id="cStd"></canvas></div></figure>
+        <figure class="fig"><figcaption>VIF 共線性檢查（&lt; 5 正常、5–10 中度、&gt; 10 嚴重）</figcaption>
+          <div class="chart tall" id="vifWrap"><canvas id="cVif"></canvas></div></figure>
+      </div>
+    </section>
+
+    <section class="panel" id="s-eval">
+      <h2>5 · 模型評估</h2>
+      <div class="kpis small" id="diagKpis"></div>
+      <div class="grid2">
+        <figure class="fig"><figcaption>測試集：實際值 vs 預測值</figcaption>
+          <div class="chart"><canvas id="cAvp"></canvas></div></figure>
+        <figure class="fig"><figcaption id="piCap">測試集預測值與 95% 預測區間（依預測值排序）</figcaption>
+          <div class="chart"><canvas id="cPi"></canvas></div></figure>
+        <figure class="fig"><figcaption>殘差 vs 預測值（線性、變異數同質）</figcaption>
+          <div class="chart"><canvas id="cRes"></canvas></div></figure>
+        <figure class="fig"><figcaption>常態 Q-Q 圖（誤差常態性）</figcaption>
+          <div class="chart"><canvas id="cQq"></canvas></div></figure>
+      </div>
+    </section>
+
+    <section class="panel" id="s-outliers">
+      <h2>6 · 離群值與影響點</h2>
+      <p class="muted" id="inflText"></p>
+      <div class="grid2">
+        <figure class="fig"><figcaption>學生化殘差 vs 槓桿值（訓練集）</figcaption>
+          <div class="chart"><canvas id="cInfl"></canvas></div></figure>
+        <figure class="fig" id="pctFig"><figcaption id="pctCap">測試集誤差百分比</figcaption>
+          <div class="chart"><canvas id="cPct"></canvas></div></figure>
+      </div>
+      <h3>Cook's distance 最大的 10 筆</h3>
+      <div class="table-wrap"><table class="tbl small" id="outTable"></table></div>
+    </section>
+
+    <section class="panel" id="s-predict">
+      <h2>7 · 即時預測（部署）</h2>
+      <p class="muted">調整主模型的特徵值，網頁直接用 β、(XᵀX)⁻¹ 與 σ² 計算點估計與 95% 預測區間。</p>
+      <div class="predict">
+        <form class="pform" id="pform" onsubmit="return false"></form>
+        <div class="presult">
+          <div class="pvalue" id="pValue"></div>
+          <div class="muted" id="pRange"></div>
+          <figure class="fig"><figcaption>各特徵相對「中位數樣本」的貢獻</figcaption>
+            <div class="chart tall" id="contribWrap"><canvas id="cContrib"></canvas></div></figure>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="loading" id="loading">載入中…</div>
+</main>
+
+<footer class="wrap foot muted">
+  mlr_engine · 7115056079 AIoT HW2 · 圖表 Chart.js、瀏覽器端 Python 由 Pyodide 提供
+</footer>
+<script src="assets/js/app.js"></script>
+</body>
+</html>

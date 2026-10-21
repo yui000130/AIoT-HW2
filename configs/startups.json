@@ -1,0 +1,11 @@
+{
+  "id": "startups",
+  "order": 2,
+  "title": "50 Startups 新創利潤",
+  "description": "50 家新創公司的研發、行政、行銷支出與州別，預測利潤 Profit。",
+  "source": "https://raw.githubusercontent.com/Avik-Jain/100-Days-Of-ML-Code/master/datasets/50_Startups.csv",
+  "data": "data/50_Startups.csv",
+  "target": "Profit",
+  "prep": {"log_target": false},
+  "model": {"k_rule": "one_se"}
+}

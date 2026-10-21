@@ -1,0 +1,11 @@
+{
+  "id": "boston",
+  "order": 3,
+  "title": "Boston Housing 房價",
+  "description": "波士頓 506 個城鎮的 13 個指標（犯罪率、房間數、低收入比例等），預測房價中位數 medv（千美元）。",
+  "source": "https://raw.githubusercontent.com/selva86/datasets/master/BostonHousing.csv",
+  "data": "data/BostonHousing.csv",
+  "target": "medv",
+  "prep": {"log_target": false},
+  "model": {"k_rule": "one_se"}
+}

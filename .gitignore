@@ -1,0 +1,24 @@
+# 參考用的原始專案（不推到本 repo）
+AIoT-L6-DIC2-MultipleLR/
+
+# 空的作業壓縮檔
+*.zip
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+
+# 執行 7115056079_hw2.py 產生的輸出
+figures/
+results/
+7115056079_hw2/figures/
+7115056079_hw2/results/
+
+# 編輯器 / 系統
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

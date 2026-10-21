@@ -1,0 +1,50 @@
+[
+ {
+  "id": "kc_house",
+  "title": "King County 房價（HW2）",
+  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 7115056079_hw2.py 完全相同。",
+  "data": "data/kc_house_data.csv",
+  "target": "price",
+  "rows": 21596,
+  "features": 18,
+  "k": 11,
+  "test_r2": 0.7594949,
+  "order": 1
+ },
+ {
+  "id": "startups",
+  "title": "50 Startups 新創利潤",
+  "description": "50 家新創公司的研發、行政、行銷支出與州別，預測利潤 Profit。",
+  "data": "data/50_Startups.csv",
+  "target": "Profit",
+  "rows": 50,
+  "features": 5,
+  "k": 1,
+  "test_r2": 0.9265108,
+  "order": 2
+ },
+ {
+  "id": "boston",
+  "title": "Boston Housing 房價",
+  "description": "波士頓 506 個城鎮的 13 個指標（犯罪率、房間數、低收入比例等），預測房價中位數 medv（千美元）。",
+  "data": "data/BostonHousing.csv",
+  "target": "medv",
+  "rows": 506,
+  "features": 13,
+  "k": 4,
+  "test_r2": 0.6070904,
+  "order": 3
+ },
+ {
+  "id": "insurance",
+  "title": "Medical Insurance 醫療保險費用",
+  "description": "1,338 筆保戶的年齡、BMI、子女數、性別、吸菸與地區，預測年度醫療費用 charges（測試多個類別欄位的虛擬變數編碼）。",
+  "data": "data/insurance.csv",
+  "target": "charges",
+  "rows": 1338,
+  "features": 8,
+  "k": 3,
+  "test_r2": 0.7941088,
+  "order": 4
+ }
+]

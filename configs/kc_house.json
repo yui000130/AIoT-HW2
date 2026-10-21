@@ -1,0 +1,31 @@
+{
+  "id": "kc_house",
+  "order": 1,
+  "title": "King County 房價（HW2）",
+  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 7115056079_hw2.py 完全相同。",
+  "source": "https://www.kaggle.com/datasets/harlfoxem/housesalesprediction",
+  "data": "data/kc_house_data.csv",
+  "target": "price",
+  "prep": {
+    "log_target": true,
+    "date_features": {"date": {"year": "sale_year", "month": "sale_month"}},
+    "filters": ["bedrooms > 0", "bedrooms <= 11", "bathrooms > 0"],
+    "derive": {
+      "house_age": "sale_year - yr_built",
+      "is_renovated": "yr_renovated > 0",
+      "has_basement": "sqft_basement > 0"
+    },
+    "log_features": ["sqft_living", "sqft_lot", "sqft_living15", "sqft_lot15"],
+    "drop": ["id", "zipcode", "sqft_above", "yr_built", "yr_renovated", "sqft_basement"],
+    "features": ["bedrooms", "bathrooms", "log_sqft_living", "log_sqft_lot", "floors",
+                 "waterfront", "view", "condition", "grade", "has_basement", "house_age",
+                 "is_renovated", "lat", "long", "log_sqft_living15", "log_sqft_lot15",
+                 "sale_month", "sale_year"]
+  },
+  "model": {
+    "k_rule": "tolerance",
+    "k_tolerance": 0.002,
+    "simple_feature": "log_sqft_living",
+    "max_exhaustive": 18
+  }
+}
