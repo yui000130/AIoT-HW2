@@ -32,7 +32,11 @@
       <h2>選擇資料集</h2>
       <p class="muted">內建報表由 <code>python -m mlr_engine --build-all</code> 預先產生；自訂 CSV 會在你的瀏覽器中以 Pyodide 執行同一份 Python 程式，資料不會上傳到任何伺服器。</p>
     </div>
-    <div class="cards" id="datasetCards"></div>
+    <div class="ds-row">
+      <label class="ds-label" for="datasetSelect">資料集</label>
+      <select id="datasetSelect" class="ds-select"></select>
+    </div>
+    <div class="ds-meta" id="datasetMeta"></div>
   </section>
 
   <!-- 自訂 CSV -->
@@ -122,6 +126,9 @@
     <section class="panel" id="s-selection">
       <h2>2 · 特徵選擇：k 個特徵時的表現</h2>
       <p class="muted" id="ruleText"></p>
+      <p class="hint">點下面的按鈕，看每種方法是怎麼挑特徵的，圖表和排序表也會跟著標示該方法：</p>
+      <div class="method-btns" id="methodBtns" role="group" aria-label="特徵選擇方法"></div>
+      <div class="method-desc" id="methodDesc" aria-live="polite"></div>
       <div class="seg" id="kSeg"></div>
       <div class="chart tall"><canvas id="cK"></canvas></div>
       <details><summary>表格檢視</summary><div class="table-wrap"><table class="tbl" id="kTable"></table></div></details>

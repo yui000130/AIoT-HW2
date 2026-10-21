@@ -17,7 +17,7 @@
   ];
 
   const state = { index: [], report: null, reportId: null, charts: {}, worker: null, jobs: {}, jobId: 0,
-                  custom: null, kMetric: "cv_rmse", histMode: "raw" };
+                  custom: null, kMetric: "cv_rmse", histMode: "raw", method: "all" };
 
   /* ---------------- 格式化 ---------------- */
   const css = (n) => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
@@ -138,35 +138,36 @@
   }
 
   function renderCards() {
-    const cards = state.index.map((d) => `
-      <button class="card" type="button" data-id="${esc(d.id)}" aria-pressed="false">
-        <strong>${esc(d.title)}</strong>
-        <span class="meta"><span>${d.rows.toLocaleString()} 筆</span><span>${d.features} 個候選特徵</span></span>
-        <span class="meta"><span>y = <b>${esc(d.target)}</b></span><span>k = <b>${d.k}</b></span><span>Test R² <b>${num(d.test_r2, 3)}</b></span></span>
-      </button>`);
-    if (state.custom) {
-      const r = state.custom, m = mainRow(r);
-      cards.push(`<button class="card" type="button" data-id="custom-report" aria-pressed="false">
-        <strong>自訂：${esc(r.meta.title)}</strong>
-        <span class="meta"><span>${r.overview.n_used.toLocaleString()} 筆</span><span>${r.overview.n_features} 個候選特徵</span></span>
-        <span class="meta"><span>y = <b>${esc(r.overview.target)}</b></span><span>k = <b>${r.main.k}</b></span><span>Test R² <b>${num(m.test_r2, 3)}</b></span></span>
-      </button>`);
-    }
-    cards.push(`<button class="card add" type="button" data-id="custom" aria-pressed="false">
-        <strong>＋ 其他：上傳自訂 CSV</strong><span class="meta">在瀏覽器中用 Python 即時分析任意資料</span></button>`);
-    $("#datasetCards").innerHTML = cards.join("");
-    $("#datasetCards").querySelectorAll(".card").forEach((b) => b.addEventListener("click", () => {
-      const id = b.dataset.id;
+    const sel = $("#datasetSelect");
+    const opt = (id, text) => `<option value="${esc(id)}">${esc(text)}</option>`;
+    sel.innerHTML = `<optgroup label="內建資料集">${state.index.map((d) => opt(d.id, d.title)).join("")}</optgroup>` +
+      `<optgroup label="自訂">${state.custom ? opt("custom-report", `自訂：${state.custom.meta.title}`) : ""}` +
+      opt("custom", "＋ 其他：上傳自訂 CSV") + "</optgroup>";
+    sel.onchange = () => {
+      const id = sel.value;
       if (id === "custom") showUpload();
       else if (id === "custom-report") { $("#uploadPanel").hidden = false; showReport(state.custom, id); }
       else selectDataset(id);
-    }));
+    };
     markCard();
   }
 
   function markCard() {
     const active = !$("#uploadPanel").hidden && state.reportId !== "custom-report" ? "custom" : state.reportId;
-    document.querySelectorAll(".card").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.id === active)));
+    const sel = $("#datasetSelect");
+    if (active && [...sel.options].some((o) => o.value === active)) sel.value = active;
+    const meta = $("#datasetMeta");
+    if (active === "custom") {
+      meta.textContent = "在瀏覽器中用 Python 即時分析任意 CSV，資料不會上傳到伺服器。";
+      return;
+    }
+    let d = state.index.find((x) => x.id === active);
+    if (active === "custom-report" && state.custom) {
+      const r = state.custom;
+      d = { rows: r.overview.n_used, features: r.overview.n_features, target: r.overview.target, k: r.main.k, test_r2: mainRow(r).test_r2 };
+    }
+    meta.innerHTML = d ? `<span><b>${d.rows.toLocaleString()}</b> 筆</span><span><b>${d.features}</b> 個候選特徵</span>` +
+      `<span>目標 y = <b>${esc(d.target)}</b></span><span>主模型 k = <b>${d.k}</b></span><span>Test R² <b>${num(d.test_r2, 3)}</b></span>` : "";
   }
 
   async function selectDataset(id) {
@@ -296,8 +297,46 @@
     test_r2: { label: (r) => `Test R²${r.overview.log_target ? "（log 尺度）" : ""}`, fmt: (v) => num(v, 4) },
   };
 
+  const METHOD_INFO = {
+    all: { name: "全部比較", how: "五種方法都只用訓練集，各自產生「k = 1、2、3… 時要選哪 k 個特徵」的清單；再用同一個簡約規則替每個方法挑 k，特徵數最少者就是主模型。RMSE 曲線越低越好、R² 越高越好。" },
+    "Lasso": { name: "Lasso (L1)", how: "在迴歸加上懲罰項 λ·Σ|β|，把 λ 由大到小慢慢放寬：一開始所有係數都被壓成 0，越早「掙脫 0」的特徵越重要，依這個先後順序排名。" },
+    "Forward SFS": { name: "Forward SFS 前向選擇", how: "從 0 個特徵開始，每一輪把剩下的特徵逐一試加進模型，用交叉驗證看哪一個讓 R² 提升最多就正式加入，一直加到全部特徵為止。" },
+    "RFE": { name: "RFE 遞迴特徵消除", how: "先用全部特徵配適（標準化後的）迴歸，每一輪刪掉係數絕對值最小、最不重要的特徵再重新配適；越晚被刪掉的特徵排名越前面。" },
+    "ElasticNet": { name: "ElasticNet 彈性網路", how: "同時加上 L1 與 L2 懲罰（各占一半），和 Lasso 一樣看特徵進入模型的先後；遇到彼此高度相關的特徵時不會只留一個，結果比 Lasso 穩定。" },
+    "Exhaustive": { name: "Exhaustive 窮舉搜尋", how: "對每個 k，把所有可能的 k 個特徵組合全部試過（共 2ᵖ − 1 種），挑訓練誤差最小的組合；保證是每個 k 的最佳解，但特徵一多就非常耗時。" },
+  };
+
   function renderSelection(r) {
     const s = r.selection, mainM = r.main.name.replace("OLS + ", "");
+    if (state.method !== "all" && !s.methods.includes(state.method)) state.method = "all";
+    const btns = $("#methodBtns");
+    btns.innerHTML = ["all", ...s.methods].map((m) => {
+      const sw = m === "all" ? "" : ` style="--sw:${methodColor(m)}"`;
+      const k = m === "all" ? "" : `<span class="k">k = ${s.k_by_method[m]}</span>`;
+      return `<button type="button" class="mbtn" data-m="${esc(m)}"${sw}><span class="sw${m === "all" ? " all" : ""}"></span>${esc(m === "all" ? "全部比較" : m)}${k}</button>`;
+    }).join("");
+    btns.querySelectorAll(".mbtn").forEach((b) => b.addEventListener("click", () => { state.method = b.dataset.m; focusMethod(); }));
+    const focusMethod = () => {
+      const fm = state.method, info = METHOD_INFO[fm] || { name: fm, how: "" };
+      btns.querySelectorAll(".mbtn").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.m === fm)));
+      const desc = $("#methodDesc");
+      desc.style.setProperty("--sw", fm === "all" ? css("--series-1") : methodColor(fm));
+      if (fm === "all") {
+        desc.innerHTML = `<p class="how"><b>${info.name}</b>：${info.how}</p><p class="res">主模型：<b>${esc(r.main.name)}</b>（k = ${r.main.k}）。</p>`;
+      } else {
+        const mr = r.models.find((x) => x.model === `OLS + ${fm}`) || {};
+        const tag = `OLS + ${fm}` === r.main.name ? "（← 就是主模型）" : r.main.same_as.includes(fm) ? "（和主模型選出相同特徵）" : "";
+        desc.innerHTML = `<p class="how"><b>${info.name}</b>：${info.how}</p>` +
+          `<p class="res">這次選出 <b>k = ${s.k_by_method[fm]}</b> 個特徵：${(mr.features || []).map((f) => `<code>${esc(f)}</code>`).join(" ")}；` +
+          `Test R² = <b>${num(mr.test_r2, 4)}</b>，Test RMSE = <b>${val(mr.test_rmse)}</b>${tag}。</p>`;
+      }
+      document.querySelectorAll("#rankTable .focus").forEach((el) => el.classList.remove("focus"));
+      if (fm !== "all") {
+        const col = s.methods.indexOf(fm) + 2;
+        document.querySelectorAll(`#rankTable tr > :nth-child(${col})`).forEach((el) => { el.classList.add("focus"); el.style.setProperty("--sw", methodColor(fm)); });
+      }
+      drawK();
+    };
     const rule = r.settings.k_rule === "tolerance"
       ? `CV RMSE 落在最小值 + ${r.settings.k_tolerance} 以內的最小 k`
       : "1-SE 法則：CV RMSE ≤ 最小值 + 1 個標準誤的最小 k";
@@ -310,18 +349,24 @@
     const drawK = () => {
       const metric = state.kMetric, M = K_METRICS[metric];
       seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === metric)));
-      const datasets = s.methods.map((m, i) => {
+      const fm = state.method;
+      const datasets = s.methods.map((m) => {
         const idx = METHOD_ORDER.indexOf(m);
+        const dim = fm !== "all" && m !== fm;
+        const c = dim ? css("--grid") : methodColor(m);
         return { label: m, data: s.k_table.filter((row) => row.method === m).map((row) => ({ x: row.k, y: row[metric] })),
-          borderColor: methodColor(m), backgroundColor: m === "Exhaustive" ? css("--surface-1") : methodColor(m), pointStyle: POINT_STYLES[idx] || "circle",
-          pointRadius: 4, pointHoverRadius: 6, borderDash: DASHES[idx] || [], pointBorderColor: m === "Exhaustive" ? methodColor(m) : css("--surface-1"), pointBorderWidth: m === "Exhaustive" ? 2 : 1 };
+          borderColor: c, backgroundColor: m === "Exhaustive" ? css("--surface-1") : c, pointStyle: POINT_STYLES[idx] || "circle",
+          pointRadius: dim ? 2 : 4, pointHoverRadius: 6, borderDash: DASHES[idx] || [], borderWidth: m === fm ? 3 : 2,
+          pointBorderColor: m === "Exhaustive" ? c : css("--surface-1"), pointBorderWidth: m === "Exhaustive" ? 2 : 1, order: m === fm ? 0 : 1 };
       });
-      const lines = [{ x: r.main.k, label: `主模型 k = ${r.main.k}` }];
-      if (metric === "cv_rmse") lines.push({ y: s.thresholds[mainM], label: "簡約門檻", dash: [2, 3] });
+      const lines = fm === "all"
+        ? [{ x: r.main.k, label: `主模型 k = ${r.main.k}` }]
+        : [{ x: s.k_by_method[fm], label: `${fm} 選 k = ${s.k_by_method[fm]}`, color: methodColor(fm) }];
+      if (metric === "cv_rmse") lines.push({ y: s.thresholds[fm === "all" ? mainM : fm], label: "簡約門檻", dash: [2, 3] });
       mk("cK", {
         type: "line", data: { datasets },
         options: { parsing: true, interaction: { mode: "nearest", axis: "x", intersect: false },
-          plugins: { refLines: { lines }, tooltip: { callbacks: {
+          plugins: { refLines: { lines }, legend: { labels: { sort: (a, b) => a.datasetIndex - b.datasetIndex } }, tooltip: { callbacks: {
             title: (it) => `k = ${it[0].parsed.x}`, label: (it) => `${it.dataset.label}：${M.fmt(it.parsed.y)}` } } },
           scales: { x: { type: "linear", min: 1, max: r.overview.n_features, ticks: { stepSize: 1 }, title: axisTitle("特徵數 k") },
             y: { title: axisTitle(M.label(r)) } } },
@@ -333,7 +378,6 @@
           return `<td>${row ? M.fmt(row[metric]) : "—"}</td>`;
         }).join("")}</tr>`).join("") + "</tbody>";
     };
-    drawK();
 
     const feats = Object.keys(s.rank).sort((a, b) => {
       const ra = s.rank[a][s.methods[s.methods.length - 1]] ?? 99, rb = s.rank[b][s.methods[s.methods.length - 1]] ?? 99;
@@ -344,6 +388,7 @@
         const k = s.rank[f][m];
         return `<td class="${k !== null && k <= s.k_by_method[m] ? "on" : ""}">${k ?? "—"}</td>`;
       }).join("")}</tr>`).join("") + "</tbody>";
+    focusMethod();
   }
 
   function renderModels(r) {
@@ -612,7 +657,7 @@
   /* ---------------- 自訂 CSV（Pyodide） ---------------- */
   function showUpload() {
     $("#uploadPanel").hidden = false;
-    document.querySelectorAll(".card").forEach((c) => c.setAttribute("aria-pressed", String(c.dataset.id === "custom")));
+    markCard();
     $("#loading").hidden = true;
     $("#uploadPanel").scrollIntoView({ behavior: "smooth", block: "start" });
     history.replaceState(null, "", "?dataset=custom");
