@@ -457,7 +457,7 @@
     const c0 = M.coef.find((c) => c.term === "const");
     const terms = M.coef.filter((c) => c.term !== "const").map((c) =>
       `<span class="t">${c.coef < 0 ? "−" : "+"} ${sig(c.coef)}·<span class="v">${esc(c.term)}</span></span>`);
-    $("#formula").innerHTML = `預測 <span class="y">${yName}</span> =<span class="t">${c0.coef < 0 ? "−" : ""}${sig(c0.coef)}</span> ` + terms.join(" ");
+    $("#formula").innerHTML = `預測 <span class="y">${yName}</span> =&nbsp;<span class="t">${c0.coef < 0 ? "−" : ""}${sig(c0.coef)}</span> ` + terms.join(" ");
     const notes = [];
     if (o.log_target) {
       notes.push(`預測 ${esc(o.target)} = e<sup>(上式)</sup>（中位數）；平均數再乘上 smearing 修正係數 ${num(P.smearing, 4)}。`);
