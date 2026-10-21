@@ -10,7 +10,7 @@ from .selection import METHODS, run_selection
 
 __all__ = ["read_csv_any", "OLS", "vif_table", "run_analysis", "prepare", "profile_columns",
            "suggest_target", "run_selection", "run_config", "METHODS", "DEFAULT_MODEL", "DEFAULT_PREP"]
-__version__ = "1.0.0"
+__version__ = "1.3.0"
 
 
 def run_config(config: dict, base_dir=".", progress=None):

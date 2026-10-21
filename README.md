@@ -2,6 +2,7 @@
 
 > 🌐 **線上展示**：<https://yui000130.github.io/AIoT-HW2/>
 > 📦 **GitHub**：<https://github.com/yui000130/AIoT-HW2>
+> 🏷️ **目前版本**：v1.3.0（2026-10-21）・[版本紀錄](#版本紀錄)
 
 把 HW2（King County 房價預測）的完整分析流程拆成可重複使用的 Python 套件 **`mlr_engine`**，
 任何 CSV 都能套用同一套「前處理 → 五種特徵選擇 → 依 k 比較 → 簡約選模 → 統計檢定與診斷 → 部署預測」流程，
@@ -23,6 +24,7 @@
 | 資料集 | 筆數 | 目標 y | 主模型 | Test R² |
 |---|---:|---|---|---:|
 | **King County 房價（HW2）** | 21,596 | `price`（取 log） | OLS + Forward SFS，k = 11 | 0.7595 |
+| Human-AI 互動決策（HAIID） | 35,670 | `response_2` | OLS + Lasso，k = 3 | 0.7518 |
 | 50 Startups 新創利潤 | 50 | `Profit` | OLS + Lasso，k = 1（R&D Spend） | 0.9265 |
 | Boston Housing 房價 | 506 | `medv` | OLS + Lasso，k = 4 | 0.6071 |
 | Medical Insurance 醫療費用 | 1,338 | `charges`（取 log） | OLS + Lasso，k = 3 | 0.7941 |
@@ -51,6 +53,22 @@ k = 11、Test R² = 0.760、整體 F = 5,317、最大 VIF = 4.14、Durbin-Watson
    （`one_se`：1-SE 法則；`tolerance`：CV RMSE ≤ 最小值 + 容忍值），取特徵數最少者為主模型；
    殘差診斷（Durbin-Watson、Jarque-Bera、Q-Q 圖）、VIF、槓桿值 / 學生化殘差 / Cook's distance、移除高影響點的穩健性檢查，以及梯度提升樹參考模型。
 5. **Deployment**：報表中包含 β、(XᵀX)⁻¹、σ²，網頁的「即時預測」直接計算點估計與 95% 預測區間。
+
+---
+
+## 網頁功能
+
+| 區塊 | 功能 |
+|---|---|
+| 選擇資料集 | 下拉選單切換內建資料集，或選「＋ 其他：上傳自訂 CSV」；下方顯示筆數、特徵數、目標與主模型摘要 |
+| 總覽 | 關鍵指標（Test R²、RMSE、95% 預測區間涵蓋率）、主模型選入 / 排除的特徵、前處理紀錄 |
+| 1 · 資料理解 | 目標分布、各特徵與目標的相關係數、特徵相關矩陣、欄位型態判斷、原始資料預覽 |
+| 2 · 特徵選擇 | 五種方法做成按鈕，點選後顯示挑選原理與結果並在圖表中標示；k 曲線可切換 CV RMSE / Test RMSE / Test R²；表格檢視預設展開並附數值說明 |
+| 3 · 模型比較 | 單純線性迴歸、全特徵基底模型、五種方法的模型與梯度提升樹參考模型並排比較 |
+| 4 · 主模型係數 | 主模型公式、係數 / 標準誤 / p-value / 信賴區間與白話解讀、標準化係數圖、VIF |
+| 5 · 模型評估 | 實際 vs 預測、95% 預測區間、殘差圖、Q-Q 圖、Durbin-Watson / Jarque-Bera |
+| 6 · 離群值 | 槓桿值、學生化殘差、Cook's distance、影響力前 10 名、移除後的穩健性檢查 |
+| 7 · 即時預測 | 拉動滑桿輸入特徵值，即時算出預測值、95% 預測區間與各特徵的貢獻 |
 
 ---
 
@@ -178,3 +196,25 @@ python -m unittest discover -s tests -v
 
 網站是純靜態檔案，GitHub Pages 設定為 **Settings → Pages → Deploy from a branch → `main` / `(root)`**，
 推送到 `main` 後約 1 分鐘自動更新。修改 `mlr_engine/` 或 `configs/` 後記得先執行 `python -m mlr_engine --build-all` 再提交報表。
+
+---
+
+## 版本紀錄
+
+### v1.3.0（2026-10-21）
+- 新增 **Human-AI 互動決策（HAIID）** 資料集（35,670 筆，預測看到建議後的最終回答 `response_2`），放在下拉選單第二個。
+- 原始作業檔案改為只保留在本機，不再放進 repo。
+- 讀取 CSV 時關閉 `low_memory`，避免混合型別欄位出現警告。
+
+### v1.2.0（2026-10-21）
+- 「2 · 特徵選擇」的表格檢視預設展開，並依所選指標說明 CV RMSE / Test RMSE / Test R² 的意義與用途；粗體標出每列最佳方法，◆ 標出各方法選定的 k。
+- 「4 · 主模型 OLS 係數」新增主模型公式，並說明 log 轉換、虛擬變數基準組與 smearing 修正。
+
+### v1.1.0（2026-10-21）
+- 「選擇資料集」由卡片改為下拉選單，下方顯示資料集摘要。
+- 五種特徵選擇方法改為可點選的按鈕：顯示每種方法的挑選原理、選出的特徵與表現，並在 k 曲線圖與特徵排序表中標示該方法。
+
+### v1.0.0（2026-10-21）
+- 將 HW2（King County 房價）的分析流程模組化為 `mlr_engine` 套件：CSV 讀取、前處理、自製 OLS、五種特徵選擇、簡約選 k、殘差與離群值診斷、部署參數。
+- 網頁儀表板：內建 King County、50 Startups、Boston Housing、Medical Insurance 四個資料集；可上傳任意 CSV，由 Pyodide 在瀏覽器中執行同一份 Python 程式。
+- 命令列 `python -m mlr_engine` 與單元測試（含 HW2 結果重現），並以 GitHub Pages 發布。

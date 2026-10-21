@@ -293,7 +293,7 @@ def run_analysis(df: pd.DataFrame, target: str, prep: dict = None, model: dict =
 
     report = {
         "meta": {"title": target, **(meta or {}), "generated_in_sec": round(time.time() - t0, 2),
-                 "engine": "mlr_engine 1.0"},
+                 "engine": "mlr_engine 1.3.0"},
         "settings": {**cfg, "methods": methods},
         "overview": overview,
         "vif_all": vif_all.to_dict("records"),
