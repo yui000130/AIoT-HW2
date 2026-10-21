@@ -131,7 +131,9 @@
       <div class="method-desc" id="methodDesc" aria-live="polite"></div>
       <div class="seg" id="kSeg"></div>
       <div class="chart tall"><canvas id="cK"></canvas></div>
-      <details><summary>表格檢視</summary><div class="table-wrap"><table class="tbl" id="kTable"></table></div></details>
+      <details open><summary>表格檢視</summary>
+        <div class="explain" id="kExplain"></div>
+        <div class="table-wrap"><table class="tbl" id="kTable"></table></div></details>
       <h3>各方法的特徵排序（數字 = 第幾個被選入；底色 = 落在該方法選出的 k 之內；✓ = 主模型特徵）</h3>
       <div class="table-wrap"><table class="tbl rank" id="rankTable"></table></div>
     </section>
@@ -144,6 +146,11 @@
 
     <section class="panel" id="s-coef">
       <h2>4 · 主模型 OLS 係數</h2>
+      <div class="formula-box">
+        <div class="formula-title">主模型公式</div>
+        <div class="formula" id="formula"></div>
+        <p class="muted small" id="formulaNote"></p>
+      </div>
       <p class="muted" id="coefText"></p>
       <div class="table-wrap"><table class="tbl" id="coefTable"></table></div>
       <div class="grid2">

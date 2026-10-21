@@ -138,6 +138,16 @@ input[type=url], input[type=number], select {
 .method-desc p { margin: 4px 0; }
 .method-desc .how { color: var(--text-primary); }
 .method-desc .res { color: var(--text-secondary); }
+.explain { font-size: .88rem; color: var(--text-secondary); margin: 8px 0 10px; }
+.explain p { margin: 4px 0; }
+.explain b { color: var(--text-primary); }
+.formula-box { background: var(--surface-2); border-radius: 10px; padding: 14px 16px; margin: 4px 0 12px; }
+.formula-title { font-size: .82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.formula { font-family: "Cambria Math", "Times New Roman", serif; font-size: 1.08rem; line-height: 2; overflow-wrap: anywhere; }
+.formula .y { font-style: italic; font-weight: 600; }
+.formula .t { white-space: nowrap; }
+.formula .v { font-style: italic; color: var(--series-1); }
+.formula-box p { margin: 6px 0 0; }
 .tbl.rank th.focus, .tbl.rank td.focus { outline: 2px solid var(--sw); outline-offset: -2px; }
 
 /* panels */

@@ -372,11 +372,32 @@
             y: { title: axisTitle(M.label(r)) } } },
       });
       const ks = [...new Set(s.k_table.map((row) => row.k))].sort((a, b) => a - b);
+      const higherBetter = metric === "test_r2";
       $("#kTable").innerHTML = `<thead><tr><th>k</th>${s.methods.map((m) => `<th>${esc(m)}</th>`).join("")}</tr></thead><tbody>` +
-        ks.map((k) => `<tr${k === r.main.k ? ' class="main"' : ""}><td>${k}</td>${s.methods.map((m) => {
-          const row = s.k_table.find((x) => x.method === m && x.k === k);
-          return `<td>${row ? M.fmt(row[metric]) : "—"}</td>`;
-        }).join("")}</tr>`).join("") + "</tbody>";
+        ks.map((k) => {
+          const rows = s.methods.map((m) => s.k_table.find((x) => x.method === m && x.k === k));
+          const vals = rows.filter(Boolean).map((x) => x[metric]);
+          const best = higherBetter ? Math.max(...vals) : Math.min(...vals);
+          return `<tr${k === r.main.k ? ' class="main"' : ""}><td>${k}</td>${rows.map((row, i) => {
+            if (!row) return "<td>—</td>";
+            const txt = M.fmt(row[metric]);
+            const chosen = s.k_by_method[s.methods[i]] === k ? " ◆" : "";
+            return `<td>${row[metric] === best && vals.length > 1 ? `<b>${txt}</b>` : txt}${chosen}</td>`;
+          }).join("")}</tr>`;
+        }).join("") + "</tbody>";
+      const o = r.overview;
+      const what = {
+        cv_rmse: `<b>CV RMSE</b>：只用訓練集做 ${r.settings.cv_folds}-fold 交叉驗證算出的平均預測誤差（${esc(o.model_target)} 尺度），<b>越小越好</b>。` +
+          `選 k 就是看這個數字：找出落在「簡約門檻」以內的最小 k，代表再多加特徵也改善有限。`,
+        test_rmse: `<b>Test RMSE</b>：在從未參與訓練的 ${Math.round(r.settings.test_size * 100)}% 測試集上的預測誤差，已換回 ${esc(o.target)} 的原始單位` +
+          `（例如 ${val(mainRow(r).test_rmse)} 代表預測值平均約差這麼多），<b>越小越好</b>。它反映模型面對新資料的真實表現，但不拿來選 k，避免「偷看答案」。`,
+        test_r2: `<b>Test R²</b>：測試集上模型能解釋 ${esc(o.model_target)} 變異的比例，介於 0～1，<b>越接近 1 越好</b>（例如 0.76 代表解釋了約 76% 的差異）。`,
+      }[metric];
+      $("#kExplain").innerHTML = `<p>每一列是特徵數 <b>k</b>、每一欄是一種方法；格子裡的數字是「用該方法排名前 k 的特徵配適 OLS」後的表現。` +
+        `上方可切換指標。<b>粗體</b> = 該列表現最好的方法，◆ = 該方法最後選定的 k，底色列 = 主模型的 k。</p>` +
+        `<p>${what}</p>` +
+        `<p>可以用來：① 比較同一個 k 下哪種方法挑的特徵比較好；② 看 k 增加到哪裡之後數字幾乎不再改善（邊際效益遞減），決定要用幾個特徵；` +
+        `③ 對照 CV（訓練集）與 Test（測試集）的趨勢是否一致，確認沒有過擬合。</p>`;
     };
 
     const feats = Object.keys(s.rank).sort((a, b) => {
@@ -429,8 +450,29 @@
     return `+1 單位 → ${c >= 0 ? "+" : ""}${val(c)}`;
   }
 
+  function renderFormula(r) {
+    const M = r.main, o = r.overview, P = r.predictor;
+    const sig = (v) => Math.abs(v).toLocaleString("en-US", { maximumSignificantDigits: 4 });
+    const yName = o.log_target ? `ln(${esc(o.target)})` : esc(o.target);
+    const c0 = M.coef.find((c) => c.term === "const");
+    const terms = M.coef.filter((c) => c.term !== "const").map((c) =>
+      `<span class="t">${c.coef < 0 ? "−" : "+"} ${sig(c.coef)}·<span class="v">${esc(c.term)}</span></span>`);
+    $("#formula").innerHTML = `預測 <span class="y">${yName}</span> =<span class="t">${c0.coef < 0 ? "−" : ""}${sig(c0.coef)}</span> ` + terms.join(" ");
+    const notes = [];
+    if (o.log_target) {
+      notes.push(`預測 ${esc(o.target)} = e<sup>(上式)</sup>（中位數）；平均數再乘上 smearing 修正係數 ${num(P.smearing, 4)}。`);
+    }
+    const logs = P.features.filter((f) => f.op === "log" || f.op === "log1p").map((f) => `${esc(f.name)} = ${f.op === "log" ? "ln" : "ln(1+"}(${esc(f.source)})${f.op === "log1p" ? ")" : ""}`);
+    if (logs.length) notes.push(`其中 ${logs.join("、")}。`);
+    const dums = [...new Map(P.features.filter((f) => f.op === "dummy").map((f) => [f.source, f])).values()];
+    if (dums.length) notes.push(`類別特徵為 0 / 1 虛擬變數，基準組：${dums.map((f) => `${esc(f.source)} = ${esc(f.baseline)}`).join("、")}。`);
+    notes.push(`係數以訓練集 ${M.n.toLocaleString()} 筆資料用最小平方法估計，完整數值見下表。`);
+    $("#formulaNote").innerHTML = notes.join(" ");
+  }
+
   function renderCoef(r) {
     const M = r.main;
+    renderFormula(r);
     $("#coefText").innerHTML = `n = ${M.n.toLocaleString()}，k = ${M.k}，R² = ${num(M.r2, 4)}，Adj R² = ${num(M.adj_r2, 4)}，` +
       `AIC = ${num(M.aic, 1)}，BIC = ${num(M.bic, 1)}；整體 F 檢定 F = ${num(M.f_stat, 1)}（df = ${M.df_model}, ${M.df_resid}），p ${pval(M.f_pvalue)}。`;
     $("#coefTable").innerHTML = `<thead><tr><th>項目</th><th>係數</th><th>標準誤</th><th>t</th><th>p-value</th><th>95% CI 下限</th><th>95% CI 上限</th><th class="l">解讀</th></tr></thead><tbody>` +
