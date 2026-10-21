@@ -2,7 +2,7 @@
  {
   "id": "kc_house",
   "title": "King County 房價（HW2）",
-  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 7115056079_hw2.py 完全相同。",
+  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 HW2 原始作業完全相同。",
   "data": "data/kc_house_data.csv",
   "target": "price",
   "rows": 21596,
@@ -10,6 +10,18 @@
   "k": 11,
   "test_r2": 0.7594949,
   "order": 1
+ },
+ {
+  "id": "haiid",
+  "title": "Human-AI 互動決策（HAIID）",
+  "description": "1,125 位受試者在 5 種任務（藝術風格、城市、諷刺語句、人口普查、皮膚病）中先作答，看到「AI 或人類」的建議後再作答一次；預測看到建議後的最終回答 response_2（−1～1，正值表示傾向正確答案，絕對值代表信心）。",
+  "data": "data/haiid_dataset.csv",
+  "target": "response_2",
+  "rows": 35670,
+  "features": 18,
+  "k": 3,
+  "test_r2": 0.751766,
+  "order": 2
  },
  {
   "id": "startups",
@@ -21,7 +33,7 @@
   "features": 5,
   "k": 1,
   "test_r2": 0.9265108,
-  "order": 2
+  "order": 3
  },
  {
   "id": "boston",
@@ -33,7 +45,7 @@
   "features": 13,
   "k": 4,
   "test_r2": 0.6070904,
-  "order": 3
+  "order": 4
  },
  {
   "id": "insurance",
@@ -45,6 +57,6 @@
   "features": 8,
   "k": 3,
   "test_r2": 0.7941088,
-  "order": 4
+  "order": 5
  }
 ]

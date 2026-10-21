@@ -45,7 +45,7 @@ def read_csv_any(source, max_rows=None) -> pd.DataFrame:
         text = str(source)
     text = text.lstrip("﻿")
     sep = sniff_delimiter(text)
-    reader_kw = {"sep": sep, "engine": "python"} if sep == r"\s+" else {"sep": sep}
+    reader_kw = {"sep": sep, "engine": "python"} if sep == r"\s+" else {"sep": sep, "low_memory": False}
 
     first_line = text.splitlines()[0] if text else ""
     first_cells = re.split(sep, first_line.strip()) if sep == r"\s+" else next(csv.reader([first_line], delimiter=sep))

@@ -1,6 +1,6 @@
 {
   "id": "insurance",
-  "order": 4,
+  "order": 5,
   "title": "Medical Insurance 醫療保險費用",
   "description": "1,338 筆保戶的年齡、BMI、子女數、性別、吸菸與地區，預測年度醫療費用 charges（測試多個類別欄位的虛擬變數編碼）。",
   "source": "https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/insurance.csv",

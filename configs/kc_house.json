@@ -2,7 +2,7 @@
   "id": "kc_house",
   "order": 1,
   "title": "King County 房價（HW2）",
-  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 7115056079_hw2.py 完全相同。",
+  "description": "美國華盛頓州 King County（含西雅圖）2014/05–2015/05 共 21,613 筆房屋成交紀錄；設定與 HW2 原始作業完全相同。",
   "source": "https://www.kaggle.com/datasets/harlfoxem/housesalesprediction",
   "data": "data/kc_house_data.csv",
   "target": "price",

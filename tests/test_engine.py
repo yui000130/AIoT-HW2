@@ -89,7 +89,7 @@ class TestPipeline(unittest.TestCase):
 
 @unittest.skipUnless(os.path.exists(os.path.join(ROOT, "data", "kc_house_data.csv")), "需要 KC 資料")
 class TestHW2Reproduction(unittest.TestCase):
-    """設定檔 configs/kc_house.json 應重現 7115056079_hw2.py 的結果"""
+    """設定檔 configs/kc_house.json 應重現 HW2 原始作業的結果"""
 
     def test_kc_house(self):
         with open(os.path.join(ROOT, "configs", "kc_house.json"), encoding="utf-8") as f:

@@ -1,0 +1,18 @@
+{
+  "id": "haiid",
+  "order": 2,
+  "title": "Human-AI 互動決策（HAIID）",
+  "description": "1,125 位受試者在 5 種任務（藝術風格、城市、諷刺語句、人口普查、皮膚病）中先作答，看到「AI 或人類」的建議後再作答一次；預測看到建議後的最終回答 response_2（−1～1，正值表示傾向正確答案，絕對值代表信心）。",
+  "source": "https://github.com/kailas-v/human-ai-interactions",
+  "data": "data/haiid_dataset.csv",
+  "target": "response_2",
+  "prep": {
+    "log_target": false,
+    "features": ["response_1", "advice", "advice_source", "task_name",
+                 "survey_q1_perceived_advice_accuracy", "survey_q2_helpfulness_of_advice",
+                 "survey_q3_trust_in_advice", "survey_q4_prefers_human_or_AI", "survey_q5_AI_in_life",
+                 "perceived_accuracy", "education", "age", "programming_experience", "socioeconomic_status"],
+    "categorical": ["advice_source", "task_name", "programming_experience"]
+  },
+  "model": {"k_rule": "one_se", "max_exhaustive": 18}
+}

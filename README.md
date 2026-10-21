@@ -27,7 +27,7 @@
 | Boston Housing 房價 | 506 | `medv` | OLS + Lasso，k = 4 | 0.6071 |
 | Medical Insurance 醫療費用 | 1,338 | `charges`（取 log） | OLS + Lasso，k = 3 | 0.7941 |
 
-`configs/kc_house.json` 與 `7115056079_hw2/7115056079_hw2.py` 的設定完全相同。模組化後的結果與原始作業一致（單元測試會檢查）：
+`configs/kc_house.json` 與 HW2 原始作業的設定完全相同。模組化後的結果與原始作業一致（單元測試會檢查）：
 k = 11、Test R² = 0.760、整體 F = 5,317、最大 VIF = 4.14、Durbin-Watson = 2.02、95% 預測區間涵蓋率 = 94.4%、最大 Cook's D = 0.014。
 
 ---
@@ -75,8 +75,7 @@ AIoT-HW2/
 ├── configs/*.json             # 每個內建資料集的設定
 ├── data/*.csv                 # 內建資料集
 ├── reports/*.json             # 預先產生的報表（index.json 為清單）
-├── tests/test_engine.py       # 單元測試（含 HW2 結果重現）
-└── 7115056079_hw2/            # 原始作業（.py / .ipynb / 報告 PDF）
+└── tests/test_engine.py       # 單元測試（含 HW2 結果重現）
 ```
 
 ---
